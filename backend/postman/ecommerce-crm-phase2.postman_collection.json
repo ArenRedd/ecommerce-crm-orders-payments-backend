@@ -1,0 +1,208 @@
+{
+  "info": {
+    "_postman_id": "8f309a12-8821-4f10-91a3-83210bcdef45",
+    "name": "E-Commerce CRM - Orders & Payments Backend (Phase 2)",
+    "description": "Postman Collection for Phase 2: Payment Management with Razorpay (Test Mode).\n\nIncludes Checkout Order Creation, Signature Verification, Webhooks, Reconciliation, Manual Payments, and Status Updates.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "razorpayOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Payments (Razorpay Flow)",
+      "item": [
+        {
+          "name": "1. Create Razorpay Order (Checkout Init)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data) {",
+                  "    pm.collectionVariables.set('razorpayOrderId', json.data.razorpayOrderId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/create-order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "create-order"]
+            }
+          }
+        },
+        {
+          "name": "2. Verify Payment Signature",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{razorpayOrderId}}\",\n  \"razorpay_payment_id\": \"pay_test_sample123\",\n  \"razorpay_signature\": \"sample_signature_hash\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "verify"]
+            }
+          }
+        },
+        {
+          "name": "3. Razorpay Webhook Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "webhook_hmac_signature" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity\": \"event\",\n  \"account_id\": \"acc_test123\",\n  \"event\": \"payment.captured\",\n  \"contains\": [\"payment\"],\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_mock_cap_001\",\n        \"entity\": \"payment\",\n        \"amount\": 193564,\n        \"currency\": \"INR\",\n        \"status\": \"captured\",\n        \"order_id\": \"{{razorpayOrderId}}\",\n        \"method\": \"card\",\n        \"captured\": true\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "webhook"]
+            }
+          }
+        },
+        {
+          "name": "4. Reconcile Aged Pending Payments",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"olderThanMinutes\": 30,\n  \"limit\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/reconcile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "reconcile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (Offline & Management)",
+      "item": [
+        {
+          "name": "Record Manual / Offline Payment (COD / Bank Transfer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"amount\": 193564,\n  \"method\": \"COD\",\n  \"status\": \"PAID\",\n  \"notes\": \"Courier remitted cash in hand\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "{{paymentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Payment Status Manually",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\",\n  \"notes\": \"Verified in bank portal transaction log\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "{{paymentId}}", "status"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
