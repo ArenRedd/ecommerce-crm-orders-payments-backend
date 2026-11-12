@@ -1,0 +1,267 @@
+{
+  "info": {
+    "_postman_id": "4b68e712-9c44-42b3-a129-873b28b7a4cd",
+    "name": "E-Commerce CRM - Orders & Payments Backend (Phase 1)",
+    "description": "Postman Collection for Phase 1 of the Orders, Payments, and Returns/Refunds module of the E-Commerce CRM system.\n\nAll monetary amounts are strictly in **integer paise** (e.g., ₹799.00 = 79900 paise).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderNumber",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "1. Create Order (Manual / Checkout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.order) {",
+                  "    pm.collectionVariables.set('orderId', jsonData.data.order._id);",
+                  "    pm.collectionVariables.set('orderNumber', jsonData.data.order.orderNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"cust_101\",\n  \"customerName\": \"Aarav Sharma\",\n  \"customerEmail\": \"aarav.sharma@example.com\",\n  \"customerPhone\": \"+919876543210\",\n  \"items\": [\n    {\n      \"product\": \"prod_101\",\n      \"qty\": 2,\n      \"unitPrice\": 79900,\n      \"discount\": 0,\n      \"tax\": 14382\n    },\n    {\n      \"product\": \"prod_102\",\n      \"qty\": 1,\n      \"unitPrice\": 199900,\n      \"discount\": 20000,\n      \"tax\": 35982\n    }\n  ],\n  \"shippingFee\": 5000,\n  \"shippingAddress\": {\n    \"street\": \"42 MG Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"postalCode\": \"560038\",\n    \"country\": \"India\"\n  },\n  \"billingAddress\": {\n    \"street\": \"42 MG Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"postalCode\": \"560038\",\n    \"country\": \"India\"\n  },\n  \"paymentMethod\": \"RAZORPAY\",\n  \"notes\": \"Deliver between 10am and 4pm\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders"]
+            }
+          }
+        },
+        {
+          "name": "2. Get Orders (List, Pagination & Filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders?page=1&limit=10&status=PLACED&sort=createdAt:desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "PLACED" },
+                { "key": "sort", "value": "createdAt:desc" },
+                { "key": "search", "value": "Aarav", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Order by ID or OrderNumber",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Update Order Status (State Machine)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"note\": \"Payment verified, advancing order to CONFIRMED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "5. Cancel Order (Before Shipping)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer requested cancellation via CRM dashboard\",\n  \"note\": \"Full refund queued if paid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "6. Get Order Payment Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "payment"]
+            }
+          }
+        },
+        {
+          "name": "7. Get Order Tracking (Stub)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/tracking",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "tracking"]
+            }
+          }
+        },
+        {
+          "name": "8. Get Order Invoice Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "invoice"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments & Refunds (Phase 1 Scaffolding)",
+      "item": [
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments"]
+            }
+          }
+        },
+        {
+          "name": "Get All Refunds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/refunds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "refunds"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Returns (Phase 1 Scaffolding)",
+      "item": [
+        {
+          "name": "Get All Returns",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System & Docs",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Swagger JSON Specification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs.json",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-docs.json"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
