@@ -45,6 +45,13 @@ const returnHistorySchema = new mongoose.Schema(
 
 const returnSchema = new mongoose.Schema(
   {
+    returnNumber: {
+      type: String,
+      unique: true,
+      trim: true,
+      uppercase: true,
+      index: true
+    },
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Order',
@@ -82,6 +89,20 @@ const returnSchema = new mongoose.Schema(
       default: 'REQUESTED',
       index: true
     },
+    refundAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      validate: {
+        validator: Number.isInteger,
+        message: 'Refund amount must be an integer in paise'
+      }
+    },
+    restocked: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
     decisionBy: {
       userId: { type: String },
       name: { type: String },
@@ -90,6 +111,16 @@ const returnSchema = new mongoose.Schema(
     decisionNote: {
       type: String,
       trim: true
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    createdBy: {
+      userId: { type: String },
+      name: { type: String },
+      role: { type: String }
     },
     history: {
       type: [returnHistorySchema],

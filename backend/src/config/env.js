@@ -12,7 +12,11 @@ const env = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_stub_key_id',
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_stub_secret',
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_stub'
+  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_stub',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || 'ecommerce_crm_stub',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || 'stub_cloudinary_key',
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || 'stub_cloudinary_secret',
+  RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS, 10) || 7
 };
 
 module.exports = env;

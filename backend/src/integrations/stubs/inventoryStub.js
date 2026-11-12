@@ -118,6 +118,27 @@ const inventoryStub = {
   },
 
   /**
+   * Restock items returning from customer upon inspection OK
+   * @param {Array<{ sku: string, qty: number }>} items
+   * @param {string} returnId
+   */
+  async restock(items = [], returnId) {
+    let restockedCount = 0;
+
+    for (const item of items) {
+      const current = inventoryStore[item.sku] !== undefined ? inventoryStore[item.sku] : 0;
+      inventoryStore[item.sku] = current + item.qty;
+      restockedCount += item.qty;
+    }
+
+    return {
+      success: true,
+      returnId,
+      restockedCount
+    };
+  },
+
+  /**
    * Set stock directly (useful in test suites)
    * @param {string} sku
    * @param {number} qty
