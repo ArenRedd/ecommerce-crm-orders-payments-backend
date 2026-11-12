@@ -40,7 +40,7 @@ const getOrdersQuerySchema = {
     limit: z.coerce.number().int().min(1).max(100).default(10),
     search: z.string().trim().optional(),
     status: z.nativeEnum(ORDER_STATUSES).optional(),
-    paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUND_PENDING', 'REFUNDED']).optional(),
+    paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUND_PENDING', 'REFUNDED', 'PARTIALLY_REFUNDED']).optional(),
     startDate: z.string().datetime({ offset: true }).optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
     endDate: z.string().datetime({ offset: true }).optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
     sort: z.string().optional().default('createdAt:desc'),

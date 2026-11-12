@@ -67,6 +67,13 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    notes: {
+      type: String,
+      trim: true
+    },
+    metadata: {
+      type: mongoose.Schema.Types.Mixed
+    },
     events: {
       type: [paymentEventSchema],
       default: []

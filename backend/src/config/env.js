@@ -11,7 +11,8 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET || 'supersecretdevkey1234567890abcdef',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_stub_key_id',
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_stub_secret'
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'rzp_test_stub_secret',
+  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || 'rzp_webhook_secret_stub'
 };
 
 module.exports = env;
