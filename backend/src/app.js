@@ -12,6 +12,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/error.middleware
 // Route modules
 const ordersRoutes = require('./modules/orders/orders.routes');
 const paymentsRoutes = require('./modules/payments/payments.routes');
+const paymentsController = require('./modules/payments/payments.controller');
 const returnsRoutes = require('./modules/returns/returns.routes');
 
 const app = express();
@@ -32,7 +33,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-mock-user', 'x-user-role']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-mock-user', 'x-user-role', 'x-razorpay-signature']
   })
 );
 
@@ -49,7 +50,56 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// 4. Body Parsers
+// 4. Razorpay Webhook (Raw-body route mounted strictly BEFORE express.json parser)
+/**
+ * @openapi
+ * /api/v1/payments/webhook:
+ *   post:
+ *     summary: Razorpay Webhook Handler
+ *     description: Receives raw JSON events from Razorpay, verifies the X-Razorpay-Signature header with RAZORPAY_WEBHOOK_SECRET, and handles payment.captured, payment.failed, and refund.processed idempotently.
+ *     tags:
+ *       - Payments
+ *     parameters:
+ *       - in: header
+ *         name: x-razorpay-signature
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               entity: event
+ *               account_id: acc_123456
+ *               event: payment.captured
+ *               contains: [payment]
+ *               payload:
+ *                 payment:
+ *                   entity:
+ *                     id: pay_RPQ9876543
+ *                     entity: payment
+ *                     amount: 193564
+ *                     currency: INR
+ *                     status: captured
+ *                     order_id: order_RPQ1234567
+ *                     method: card
+ *                     captured: true
+ *                     created_at: 1731422400
+ *     responses:
+ *       200:
+ *         description: Webhook received and processed successfully
+ *       400:
+ *         description: Invalid signature
+ */
+app.post(
+  `${env.API_PREFIX}/payments/webhook`,
+  express.raw({ type: 'application/json' }),
+  paymentsController.handleWebhook
+);
+
+// 5. Body Parsers
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
