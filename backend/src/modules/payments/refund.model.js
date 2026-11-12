@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 
 const refundSchema = new mongoose.Schema(
   {
+    refundNumber: {
+      type: String,
+      unique: true,
+      trim: true,
+      uppercase: true,
+      index: true
+    },
     return: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Return',
@@ -43,7 +50,9 @@ const refundSchema = new mongoose.Schema(
     },
     razorpayRefundId: {
       type: String,
-      trim: true
+      trim: true,
+      sparse: true,
+      index: true
     },
     approvedBy: {
       userId: { type: String },
@@ -56,6 +65,15 @@ const refundSchema = new mongoose.Schema(
     failureReason: {
       type: String,
       trim: true
+    },
+    notes: {
+      type: String,
+      trim: true
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
     }
   },
   {

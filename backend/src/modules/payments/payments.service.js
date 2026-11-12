@@ -418,25 +418,57 @@ const handleWebhook = async ({ rawBody, signature }) => {
     const rzpRefundId = refundEntity.id;
     const rzpPaymentId = refundEntity.payment_id;
 
-    const refund = await Refund.findOne({
-      $or: [{ razorpayRefundId: rzpRefundId }, { payment: await Payment.findOne({ razorpayPaymentId: rzpPaymentId })?._id }]
-    });
+    let refund = await Refund.findOne({ razorpayRefundId: rzpRefundId });
+    if (!refund && rzpPaymentId) {
+      const payment = await Payment.findOne({ razorpayPaymentId: rzpPaymentId });
+      if (payment) {
+        refund = await Refund.findOne({ payment: payment._id, status: 'PENDING' });
+      }
+    }
 
     if (refund) {
-      refund.status = 'PROCESSED';
-      refund.razorpayRefundId = rzpRefundId;
-      refund.processedAt = new Date();
-      await refund.save();
+      if (refund.status === 'PROCESSED') {
+        return { success: true, idempotent: true, message: 'Refund already marked PROCESSED' };
+      }
 
-      await Order.findByIdAndUpdate(refund.order, { paymentStatus: 'REFUNDED' });
+      await runInTransaction(async (session) => {
+        refund.status = 'PROCESSED';
+        refund.razorpayRefundId = rzpRefundId;
+        refund.processedAt = new Date(refundEntity.created_at ? refundEntity.created_at * 1000 : Date.now());
+        await refund.save({ session });
 
-      await recordAuditLog({
-        entity: 'Refund',
-        entityId: refund._id,
-        action: 'REFUND_PROCESSED_WEBHOOK',
-        performedBy: { userId: 'razorpay_webhook', name: 'Razorpay Webhook', role: 'webhook' },
-        newState: { status: 'PROCESSED', razorpayRefundId: rzpRefundId },
-        metadata: { eventId }
+        const order = await Order.findById(refund.order).session(session);
+        if (order) {
+          const allPaid = (await Payment.find({ order: order._id, status: 'PAID' }).session(session)).reduce((sum, p) => sum + p.amount, 0);
+          const allRefunded = (await Refund.find({ order: order._id, status: 'PROCESSED' }).session(session)).reduce((sum, r) => sum + r.amount, 0);
+          order.paymentStatus = allRefunded >= allPaid ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
+          await order.save({ session });
+        }
+
+        if (refund.return) {
+          const returnDoc = await Return.findById(refund.return).session(session);
+          if (returnDoc && returnDoc.status !== 'REFUNDED') {
+            const prev = returnDoc.status;
+            returnDoc.status = 'REFUNDED';
+            returnDoc.history.push({
+              from: prev,
+              to: 'REFUNDED',
+              by: { userId: 'webhook', name: 'Razorpay Webhook', role: 'webhook' },
+              at: new Date(),
+              note: `Refund confirmed by webhook (${rzpRefundId})`
+            });
+            await returnDoc.save({ session });
+          }
+        }
+
+        await recordAuditLog({
+          entity: 'Refund',
+          entityId: refund._id,
+          action: 'REFUND_PROCESSED_WEBHOOK',
+          performedBy: { userId: 'webhook', name: 'Razorpay Webhook', role: 'webhook' },
+          newState: { status: 'PROCESSED', razorpayRefundId: rzpRefundId },
+          metadata: { eventId }
+        }, session);
       });
     }
 

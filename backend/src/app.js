@@ -14,6 +14,7 @@ const ordersRoutes = require('./modules/orders/orders.routes');
 const paymentsRoutes = require('./modules/payments/payments.routes');
 const paymentsController = require('./modules/payments/payments.controller');
 const returnsRoutes = require('./modules/returns/returns.routes');
+const refundsRoutes = require('./modules/refunds/refunds.routes');
 
 const app = express();
 
@@ -134,6 +135,7 @@ app.get('/health', (req, res) => {
 app.use(`${env.API_PREFIX}/orders`, ordersRoutes);
 app.use(`${env.API_PREFIX}/payments`, paymentsRoutes);
 app.use(`${env.API_PREFIX}/returns`, returnsRoutes);
+app.use(`${env.API_PREFIX}/refunds`, refundsRoutes);
 
 // 9. 404 Catch-all handler
 app.use(notFoundHandler);

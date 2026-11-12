@@ -53,6 +53,7 @@ const ROLE_PERMISSIONS_MAP = {
     'orders.read',
     'orders.create',
     'orders.cancel',
+    'payments.create',
     'returns.read',
     'returns.create'
   ]
