@@ -1,0 +1,626 @@
+{
+  "info": {
+    "_postman_id": "c71a3f45-6e89-41d2-b054-93e50284ab71",
+    "name": "E-Commerce CRM - Complete API (Orders, Payments, Returns & Refunds)",
+    "description": "Complete Postman Collection for all 3 Phases of the Orders, Payments, and Returns/Refunds backend for the E-Commerce CRM system.\n\n### Tech Highlights\n- Strict non-negative integer paise representation for currency.\n- Strict state machines for Orders (PLACED -> CONFIRMED -> PROCESSING -> PACKED -> SHIPPED -> OUT_FOR_DELIVERY -> DELIVERED) and Returns (REQUESTED -> APPROVED -> PICKUP_SCHEDULED -> RECEIVED -> INSPECTED -> REFUNDED).\n- Razorpay Test Mode gateway integration for checkout & refunds.\n- RBAC granular permission keys.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderNumber",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "razorpayOrderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "returnId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refundId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Orders Module",
+      "item": [
+        {
+          "name": "1. Create Order (Checkout)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    pm.collectionVariables.set('orderId', res.data.order._id);",
+                  "    pm.collectionVariables.set('orderNumber', res.data.order.orderNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"cust_aarav_01\",\n  \"items\": [\n    {\n      \"product\": \"prod_101\",\n      \"qty\": 2\n    },\n    {\n      \"product\": \"prod_102\",\n      \"qty\": 1\n    }\n  ],\n  \"couponCode\": \"SAVE10\",\n  \"shippingAddress\": {\n    \"street\": \"100 Feet Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"postalCode\": \"560038\",\n    \"country\": \"India\"\n  },\n  \"billingAddress\": {\n    \"street\": \"100 Feet Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"postalCode\": \"560038\",\n    \"country\": \"India\"\n  },\n  \"paymentMethod\": \"RAZORPAY\",\n  \"notes\": \"Please deliver on weekday afternoon\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders"]
+            }
+          }
+        },
+        {
+          "name": "2. List Orders (Filtered & Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders?page=1&limit=10&status=DELIVERED",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "DELIVERED" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Update Order Status (Sequential Transitions)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\",\n  \"note\": \"Payment verified, order confirmed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "5. Cancel Order (Prior to Shipped)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer requested cancellation via phone support\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "6. Get Order Invoice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "invoice"]
+            }
+          }
+        },
+        {
+          "name": "7. Get Order Tracking Milestones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/tracking",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "tracking"]
+            }
+          }
+        },
+        {
+          "name": "8. Get Payment History for Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "orders", "{{orderId}}", "payment"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Payments Module (Razorpay Flow)",
+      "item": [
+        {
+          "name": "1. Create Razorpay Order (Checkout Init)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    pm.collectionVariables.set('razorpayOrderId', res.data.razorpayOrderId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/create-order",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "create-order"]
+            }
+          }
+        },
+        {
+          "name": "2. Verify Razorpay Signature (Checkout Complete)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{razorpayOrderId}}\",\n  \"razorpay_payment_id\": \"pay_test_RPQ123456\",\n  \"razorpay_signature\": \"e01f68e9d3d3b7498c5cb63756852bb03a6bc01041c2c8f85f19062088f117c0\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "verify"]
+            }
+          }
+        },
+        {
+          "name": "3. Record Manual Offline Payment (COD / Transfer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    pm.collectionVariables.set('paymentId', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"amount\": 359700,\n  \"method\": \"COD\",\n  \"status\": \"PAID\",\n  \"transactionRef\": \"CHQ-987654\",\n  \"notes\": \"Cash collected on delivery by courier agent\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments"]
+            }
+          }
+        },
+        {
+          "name": "4. List Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments?status=PAID&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments"],
+              "query": [
+                { "key": "status", "value": "PAID" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "{{paymentId}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Patch Payment Status (Manual Override)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\",\n  \"notes\": \"Bank wire clearance verified with finance ledger\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "{{paymentId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "7. Reconcile Aged Pending Payments",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"olderThanMinutes\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/reconcile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "reconcile"]
+            }
+          }
+        },
+        {
+          "name": "8. Razorpay Webhook (Raw Body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-razorpay-signature", "value": "mock_signature_here" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity\": \"event\",\n  \"event\": \"payment.captured\",\n  \"id\": \"evt_sample_payment_123\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_RPQ123456\",\n        \"entity\": \"payment\",\n        \"amount\": 359700,\n        \"currency\": \"INR\",\n        \"status\": \"captured\",\n        \"order_id\": \"order_test_rpq123\",\n        \"method\": \"upi\",\n        \"created_at\": 1731422400\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "payments", "webhook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Returns Module",
+      "item": [
+        {
+          "name": "1. Submit Return Request (JSON)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    pm.collectionVariables.set('returnId', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderNumber}}\",\n  \"items\": [\n    {\n      \"product\": \"prod_101\",\n      \"qty\": 1,\n      \"reason\": \"Size is too large, fabric stitching defective\"\n    }\n  ],\n  \"reason\": \"Product quality does not match specification\",\n  \"evidence\": [\n    \"https://res.cloudinary.com/demo/image/upload/sample_damage.jpg\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns"]
+            }
+          }
+        },
+        {
+          "name": "2. Submit Return Request (Multipart with File Evidence)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "orderId", "value": "{{orderNumber}}", "type": "text" },
+                { "key": "items", "value": "[{\"product\":\"prod_101\",\"qty\":1,\"reason\":\"Defective zipper\"}]", "type": "text" },
+                { "key": "reason", "value": "Defective item upon arrival", "type": "text" },
+                { "key": "evidence", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns"]
+            }
+          }
+        },
+        {
+          "name": "3. List Returns (Filter by Status / Order)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns?status=REQUESTED&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns"],
+              "query": [
+                { "key": "status", "value": "REQUESTED" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Return by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns/{{returnId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns", "{{returnId}}"]
+            }
+          }
+        },
+        {
+          "name": "5. Approve Return (Support Agent)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionNote\": \"Photo evidence verified by QA team. Approved for courier pickup.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns/{{returnId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns", "{{returnId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "6. Reject Return (Support Agent)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisionNote\": \"Item tags removed and shows visible wear. Ineligible under return policy.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns/{{returnId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns", "{{returnId}}", "reject"]
+            }
+          }
+        },
+        {
+          "name": "7. Advance Return Status (Sequential Progression)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RECEIVED\",\n  \"note\": \"Warehouse intake complete, inventory restock triggered\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/returns/{{returnId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "returns", "{{returnId}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Refunds Module",
+      "item": [
+        {
+          "name": "1. Create Refund Record (Inspected Return / Cancelled Order)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    pm.collectionVariables.set('refundId', res.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnId\": \"{{returnId}}\",\n  \"notes\": \"Approved customer refund following successful warehouse QA inspection\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/refunds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "refunds"]
+            }
+          }
+        },
+        {
+          "name": "2. Process Refund via Gateway (Finance Execution)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Disbursed to original payment source via Razorpay API\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/refunds/{{refundId}}/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "refunds", "{{refundId}}", "process"]
+            }
+          }
+        },
+        {
+          "name": "3. List Refunds (Filter by Status / Order)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/refunds?status=PROCESSED&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "refunds"],
+              "query": [
+                { "key": "status", "value": "PROCESSED" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Refund by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/refunds/{{refundId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "refunds", "{{refundId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. System & Health",
+      "item": [
+        {
+          "name": "1. Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "2. Swagger OpenAPI Specification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs.json",
+              "host": ["{{baseUrl}}"],
+              "path": ["api-docs.json"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
