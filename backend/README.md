@@ -1,34 +1,143 @@
-# E-Commerce CRM Backend — Orders, Payments, Returns & Refunds
+# 🛍️ E-Commerce CRM — Orders, Payments, Returns & Refunds
 
-Production-ready, highly secure modular monolith backend for the **Orders, Payments, and Returns/Refunds** subsystem of an enterprise MERN E-Commerce CRM.
+[![Node.js](https://img.shields.io/badge/Node.js-v20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express.js-4.21.2-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)](https://mongoosejs.com/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-Test%20Mode-0C2340?logo=razorpay&logoColor=white)](https://razorpay.com/)
+[![Jest Tests](https://img.shields.io/badge/Tests-47%20Passed%20(100%25)-brightgreen.svg?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Swagger Docs](https://img.shields.io/badge/API%20Docs-Swagger%203.0-85EA2D?logo=swagger&logoColor=black)](http://localhost:5000/api-docs)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](#)
 
----
-
-## 1. High-Level Architecture & Principles
-
-- **Modular Monolith**: One clean Express.js application organized into decoupled domain modules (`orders`, `payments`, `returns`, `refunds`, `audit`).
-- **Strict Integer-Paise Arithmetic**: Floating-point representations are strictly forbidden for money. All amounts (subtotals, discounts, taxes, grand totals, payments, and refunds) are represented as non-negative **integer paise** (e.g., ₹799.00 = `79900` paise).
-- **Hardening & Security**:
-  - `helmet` security headers.
-  - Narrow CORS policy with environment-configurable origins.
-  - `express-mongo-sanitize` defending against NoSQL injection.
-  - `express-rate-limit` defending against brute-force / DDoS attacks.
-  - Append-only event histories (`statusHistory`, `events`, `history`).
-  - Soft-deletions (`isArchived: true`), never destructive hard deletes.
-  - MongoDB multi-document transactions where supported; atomic atomic updates as resilient fallback.
-- **Razorpay Payment Gateway (Test Mode)**:
-  - Encapsulated strictly behind an adapter interface (`src/integrations/payment/razorpay.adapter.js`).
-  - Webhooks verified using HMAC-SHA256 on raw incoming byte streams before JSON body parsers.
-  - Idempotent webhook handling tracking `gatewayEventId`.
-- **Cloudinary Evidence Management**:
-  - Direct multipart stream upload or Cloudinary URL storage for return inspection evidence.
-  - Graceful fallback mock URL generator when API credentials are unset in local test environments.
+A production-ready, security-hardened **Node.js and Express.js** modular monolith backend governing the full **Order Fulfillment, Razorpay Payment Processing, and Returns & Refunds** lifecycle for an enterprise MERN E-Commerce CRM.
 
 ---
 
-## 2. System State Machines & Workflows
+## 🎬 Terminal Recording (Live Demo)
 
-### A. Order Lifecycle State Machine
+Demonstrating the environment verification, running the 47-test suite with in-memory MongoDB, and booting the HTTP server with health probe validation:
+
+<div align="center">
+  <img src="docs/demo.gif" alt="Animated Terminal Demo" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+## 📸 Proof of Functionality & Terminal Verification
+
+All key phases of the application have been executed and verified in the terminal:
+
+### 1. Dependency Installation & Clean Audit
+Output of running `npm install` across all production and test dependencies:
+
+<div align="center">
+  <img src="docs/screenshots/01-install.png" alt="01 - Dependency Installation" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+### 2. Server Startup & Live Health Probe
+Starting the Express server on port 5000, establishing the database connection, printing the endpoints banner, and serving a live HTTP `GET /health` probe:
+
+<div align="center">
+  <img src="docs/screenshots/02-run.png" alt="02 - Server Execution and Health Check" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+### 3. Comprehensive Test Suite (47 of 47 Tests Passing)
+Execution of the complete Jest + Supertest suite across **Orders**, **Payments (Razorpay)**, and **Returns/Refunds** with zero regressions:
+
+<div align="center">
+  <img src="docs/screenshots/03-tests.png" alt="03 - Full Jest Test Suite" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+## 🚀 Key Architectural Highlights
+
+1. **Strict Integer-Paise Arithmetic**: Floating-point representations are strictly prohibited for monetary values. All subtotals, item discounts, GST taxes, grand totals, payments, and refunds are calculated and stored in **integer paise** (e.g. ₹799.00 = `79900` paise).
+2. **Deterministic State Machines**:
+   - **Order Lifecycle**: `PLACED` → `CONFIRMED` → `PROCESSING` → `PACKED` → `SHIPPED` → `OUT_FOR_DELIVERY` → `DELIVERED` (cancellation permitted strictly prior to `SHIPPED`).
+   - **Return & Refund Lifecycle**: `REQUESTED` → `APPROVED` → `PICKUP_SCHEDULED` → `RECEIVED` → `INSPECTED` → `REFUNDED` (or `REJECTED`).
+3. **Hardening & Security**:
+   - `helmet` security headers.
+   - Environment-scoped CORS policy.
+   - `express-mongo-sanitize` defending against NoSQL injection.
+   - `express-rate-limit` protecting against brute-force / DDoS attacks.
+   - Append-only event histories (`statusHistory`, `events`, `history`).
+   - Soft-deletions (`isArchived: true`), avoiding destructive deletions.
+4. **Razorpay Payment Gateway (Test Mode)**:
+   - Gateway SDK calls isolated strictly behind `src/integrations/payment/razorpay.adapter.js`.
+   - Raw-body HMAC-SHA256 signature verification for webhooks (`payment.captured`, `payment.failed`, `refund.processed`).
+   - Idempotency tracking via `gatewayEventId`.
+5. **Cloudinary Return Evidence**:
+   - Multipart file upload middleware (`multer` memory storage) piping directly to Cloudinary streams, with mock fallback for local testing.
+
+---
+
+## 🛠️ Quickstart & Setup
+
+### Prerequisites
+- **Node.js** `v18+` or `v20+`
+- **npm** `v9+`
+- **MongoDB** instance (local, Docker, or Atlas connection string)
+
+### 1. Installation
+```bash
+# Clone the repository
+git clone <repo-url>
+cd ecommerce-crm/backend
+
+# Install dependencies
+npm install
+```
+
+### 2. Environment Configuration
+Create a `.env` file from `.env.example`:
+```bash
+cp .env.example .env
+```
+Key configuration parameters:
+```ini
+PORT=5000
+NODE_ENV=development
+API_PREFIX=/api/v1
+MONGODB_URI=mongodb://127.0.0.1:27017/ecommerce_crm_orders
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+JWT_SECRET=supersecretdevkey1234567890abcdef_change_in_production
+JWT_EXPIRES_IN=7d
+RAZORPAY_KEY_ID=rzp_test_stub_key_id
+RAZORPAY_KEY_SECRET=rzp_test_stub_secret
+RAZORPAY_WEBHOOK_SECRET=rzp_webhook_secret_stub
+RETURN_WINDOW_DAYS=7
+```
+
+### 3. Running the Server
+```bash
+# Run in development mode (with hot reloading via nodemon)
+npm run dev
+
+# Run in production mode
+npm start
+```
+- **API Base URL**: `http://localhost:5000/api/v1`
+- **Interactive Swagger Documentation**: `http://localhost:5000/api-docs`
+- **Health Check Probe**: `http://localhost:5000/health`
+
+### 4. Running Tests
+```bash
+# Run all unit and integration test suites
+npm test
+
+# Run tests with code coverage reporting
+npm run test:coverage
+```
+
+---
+
+## 📊 Workflows & State Machines
+
+### Order Lifecycle
 ```mermaid
 stateDiagram-v2
     [*] --> PLACED: Customer / Admin Order Creation
@@ -45,40 +154,7 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-### B. Payment Flow (Razorpay Gateway)
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer as Customer (Frontend)
-    participant Server as Express Backend
-    participant DB as MongoDB
-    participant RZP as Razorpay Gateway
-
-    Customer->>Server: POST /api/v1/payments/create-order { orderId }
-    Server->>DB: Fetch Order (read server-side grandTotal in paise)
-    Server->>RZP: razorpay.orders.create({ amount, currency: 'INR', receipt: orderNumber })
-    RZP-->>Server: rzp_order_id
-    Server->>DB: Save Payment { status: 'PENDING', razorpayOrderId }
-    Server-->>Customer: Return { razorpayOrderId, amount, currency, keyId }
-
-    Customer->>RZP: Interactive Checkout Modal (Card / UPI / NetBanking)
-    RZP-->>Customer: Return { razorpay_order_id, razorpay_payment_id, razorpay_signature }
-
-    Customer->>Server: POST /api/v1/payments/verify
-    Server->>Server: Verify HMAC-SHA256(order_id + "|" + payment_id, secret)
-    Server->>RZP: Fetch payment to double-check captured status & amount
-    Server->>DB: Mark Payment 'PAID', Order paymentStatus 'PAID', Order status 'CONFIRMED'
-    Server-->>Customer: 200 OK { success: true, order, payment }
-
-    opt Razorpay Webhook (payment.captured / payment.failed)
-        RZP->>Server: POST /api/v1/payments/webhook (Raw Body + Signature)
-        Server->>Server: Verify X-Razorpay-Signature
-        Server->>DB: Idempotently mark payment PAID / FAILED (using gatewayEventId)
-        Server-->>RZP: 200 OK
-    end
-```
-
-### C. Return & Refund Lifecycle
+### Return & Refund Lifecycle
 ```mermaid
 stateDiagram-v2
     [*] --> REQUESTED: Customer Submits Return (DELIVERED within 7 days)
@@ -94,155 +170,7 @@ stateDiagram-v2
 
 ---
 
-## 3. Directory Structure
-
-```
-backend/
-├── .env.example
-├── package.json
-├── README.md
-├── postman/
-│   ├── ecommerce-crm-phase1.postman_collection.json
-│   ├── ecommerce-crm-phase2.postman_collection.json
-│   └── ecommerce-crm-complete.postman_collection.json
-├── src/
-│   ├── app.js                           # Express application setup, middlewares, swagger
-│   ├── server.js                        # HTTP server bootstrapping & graceful shutdown
-│   ├── config/
-│   │   ├── db.js                        # Mongoose connection & connection retry
-│   │   ├── env.js                       # Environment validation via Zod
-│   │   └── swagger.js                   # OpenAPI / Swagger configuration
-│   ├── integrations/
-│   │   ├── payment/
-│   │   │   └── razorpay.adapter.js      # Gateway adapter (orders, signatures, webhooks, refunds)
-│   │   ├── upload/
-│   │   │   └── cloudinary.adapter.js    # Cloudinary image/document upload adapter with mock fallback
-│   │   └── stubs/
-│   │       ├── customerStub.js          # Customer service adapter stub
-│   │       ├── productStub.js           # Product catalog adapter stub
-│   │       ├── inventoryStub.js         # Inventory check & stock/restock adapter stub
-│   │       ├── notificationStub.js     # Email, SMS & Push notification dispatch stub
-│   │       └── eventBus.js              # Domain event publisher (order, payment, return, refund)
-│   ├── middleware/
-│   │   ├── auth.middleware.js           # JWT authentication & dev mock token generator
-│   │   ├── permission.middleware.js     # RBAC granular permission check
-│   │   ├── validate.middleware.js       # Zod schema request validation
-│   │   ├── upload.middleware.js         # Multer multipart memory parser + Cloudinary pipe
-│   │   └── error.middleware.js          # Centralized error envelope & status mapper
-│   ├── modules/
-│   │   ├── audit/
-│   │   │   ├── auditLog.model.js
-│   │   │   └── auditLog.service.js
-│   │   ├── orders/
-│   │   │   ├── order.model.js
-│   │   │   ├── orders.controller.js
-│   │   │   ├── orders.permissions.js
-│   │   │   ├── orders.routes.js
-│   │   │   ├── orders.service.js
-│   │   │   └── orders.validation.js
-│   │   ├── payments/
-│   │   │   ├── payment.model.js
-│   │   │   ├── payments.controller.js
-│   │   │   ├── payments.permissions.js
-│   │   │   ├── payments.routes.js
-│   │   │   ├── payments.service.js
-│   │   │   ├── payments.validation.js
-│   │   │   └── refund.model.js
-│   │   ├── refunds/
-│   │   │   ├── refunds.controller.js
-│   │   │   ├── refunds.routes.js
-│   │   │   ├── refunds.service.js
-│   │   │   └── refunds.validation.js
-│   │   └── returns/
-│   │       ├── return.model.js
-│   │       ├── returns.controller.js
-│   │       ├── returns.permissions.js
-│   │       ├── returns.routes.js
-│   │       ├── returns.service.js
-│   │       └── returns.validation.js
-│   └── utils/
-│       ├── AppError.js                  # Custom operational HTTP error
-│       ├── apiResponse.js               # Standardized response envelopes
-│       ├── money.js                     # Integer-paise calculations & currency formatting
-│       ├── orderNumber.js               # Cryptographic collision-resistant ID generators
-│       ├── orderStateMachine.js         # Order state transitions & validations
-│       └── returnStateMachine.js        # Return state transitions & validations
-└── tests/
-    ├── setup.js                         # In-memory MongoDB lifecycle for Jest
-    ├── orders.test.js                   # Phase 1 unit & integration tests
-    ├── payments.test.js                 # Phase 2 Razorpay unit & integration tests
-    └── returns_refunds.test.js          # Phase 3 Returns & Refunds test suite
-```
-
----
-
-## 4. Setup & Running
-
-### Requirements
-- Node.js `v18+`
-- MongoDB `v6.0+` (or Mongo Atlas URI)
-- Razorpay Test Account (`rzp_test_...`)
-- Cloudinary Account (optional; mock generator activates automatically when unset)
-
-### Installation
-```bash
-# Clone and navigate to backend directory
-cd backend
-
-# Install dependencies
-npm install
-
-# Copy environment template
-cp .env.example .env
-```
-
-### Environment Configuration (`.env`)
-```ini
-NODE_ENV=development
-PORT=5000
-API_PREFIX=/api/v1
-MONGODB_URI=mongodb://localhost:27017/ecommerce-crm
-JWT_SECRET=supersecretdevjwtkey_change_in_production_min32chars
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173
-
-# Razorpay Test Mode Keys
-RAZORPAY_KEY_ID=rzp_test_mockKeyId123456
-RAZORPAY_KEY_SECRET=mockKeySecretValueForTesting
-RAZORPAY_WEBHOOK_SECRET=mockWebhookSecretForTesting
-
-# Return Window Policy
-RETURN_WINDOW_DAYS=7
-
-# Cloudinary Storage (Optional - falls back to mock URL in test)
-CLOUDINARY_CLOUD_NAME=demo
-CLOUDINARY_API_KEY=mock_api_key
-CLOUDINARY_API_SECRET=mock_api_secret
-```
-
-### Running the Application
-```bash
-# Start in development mode with auto-reload (nodemon)
-npm run dev
-
-# Start in production mode
-npm start
-
-# Run comprehensive test suite
-npm test
-
-# Run tests with code coverage report
-npm run test:coverage
-```
-
-### Swagger Documentation
-Once the server is running, navigate to:
-- **Interactive Swagger UI**: `http://localhost:5000/api-docs`
-- **OpenAPI 3.0.3 JSON Specification**: `http://localhost:5000/api-docs.json`
-
----
-
-## 5. API Reference & Contract
+## 📑 API Endpoint Summary
 
 | Module | Method | Endpoint | Permission | Description |
 |---|---|---|---|---|
@@ -272,83 +200,38 @@ Once the server is running, navigate to:
 | **Refunds** | `PATCH` | `/api/v1/refunds/:id/process` | `refunds.approve` | Disburse refund via Razorpay, update order `paymentStatus` |
 | **Refunds** | `GET` | `/api/v1/refunds` | `payments.read` | List refund records |
 | **Refunds** | `GET` | `/api/v1/refunds/:id` | `payments.read` | Retrieve refund by ID |
-| **System** | `GET` | `/health` | *(Public)* | Service health status check |
+| **System** | `GET` | `/health` | *(Public)* | Service health status probe |
 | **System** | `GET` | `/api-docs.json` | *(Public)* | OpenAPI 3.0.3 specification JSON |
 
 ---
 
-## 6. RBAC Permission Matrix
+## 📦 Project Layout
 
-| Role | Permitted Actions |
-|---|---|
-| `admin` | Full permissions across Orders, Payments, Returns, and Refunds |
-| `manager` | Full permissions across Orders, Payments, Returns, and Refunds |
-| `support_agent` | `orders.read`, `orders.update_status`, `returns.read`, `returns.create`, `returns.approve` *(Cannot disburse refunds)* |
-| `finance_agent` | `orders.read`, `payments.read`, `payments.create`, `refunds.approve` *(Cannot approve returns)* |
-| `customer` | `orders.read`, `orders.create`, `payments.create`, `returns.read`, `returns.create` |
-| `viewer` | `orders.read`, `payments.read`, `returns.read` |
-
----
-
-## 7. Mongoose Database Schemas
-
-### 1. `Order`
-- `orderNumber`: String (unique, indexed, e.g. `ORD-20261112-XXXXXX`)
-- `customer`: `{ customerId, name, email, phone }`
-- `items`: `[ { product, name, sku, qty, unitPrice, discount, tax } ]` (all in integer paise)
-- `subtotal`, `discountTotal`, `taxTotal`, `shippingFee`, `grandTotal`: Number (integer paise)
-- `currency`: String (`'INR'`)
-- `shippingAddress`, `billingAddress`: Structured Address Schema
-- `status`: Enum (`PLACED`, `CONFIRMED`, `PROCESSING`, `PACKED`, `SHIPPED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`)
-- `paymentStatus`: Enum (`PENDING`, `PAID`, `FAILED`, `PARTIALLY_REFUNDED`, `REFUNDED`)
-- `paymentMethod`: Enum (`RAZORPAY`, `COD`, `BANK_TRANSFER`, `STRIPE`, `MANUAL`)
-- `statusHistory`: Append-only array `[ { from, to, by: { userId, name, role }, at, note } ]`
-- `isArchived`: Boolean (`index: true`)
-
-### 2. `Payment`
-- `order`: ObjectId -> `Order` (`index: true`)
-- `amount`: Number (integer paise)
-- `currency`: String (`'INR'`)
-- `method`: Enum (`RAZORPAY`, `COD`, `BANK_TRANSFER`, `STRIPE`, `MANUAL`)
-- `status`: Enum (`PENDING`, `PAID`, `FAILED`, `REFUNDED`, `PARTIALLY_REFUNDED`)
-- `razorpayOrderId`, `razorpayPaymentId`, `razorpaySignature`: String
-- `paidAt`: Date
-- `events`: Append-only array `[ { event, payload, receivedAt } ]`
-- `processedWebhooks`: Array of strings (`gatewayEventId`, unique indexed)
-
-### 3. `Return`
-- `returnNumber`: String (unique, indexed, e.g. `RET-20261112-XXXXXX`)
-- `order`: ObjectId -> `Order` (`index: true`)
-- `items`: `[ { product, qty, reason } ]`
-- `reason`: String
-- `evidence`: Array of Cloudinary URLs
-- `refundAmount`: Number (calculated integer paise snapshot)
-- `status`: Enum (`REQUESTED`, `APPROVED`, `REJECTED`, `PICKUP_SCHEDULED`, `RECEIVED`, `INSPECTED`, `REFUNDED`)
-- `decisionBy`: `{ userId, name, role }`
-- `decisionNote`: String
-- `restocked`: Boolean
-- `history`: Append-only array `[ { from, to, by: { userId, name, role }, at, note } ]`
-- `isArchived`: Boolean (`index: true`)
-
-### 4. `Refund`
-- `refundNumber`: String (unique, indexed, e.g. `REF-20261112-XXXXXX`)
-- `order`: ObjectId -> `Order` (`index: true`)
-- `return`: ObjectId -> `Return` (optional, `index: true`)
-- `payment`: ObjectId -> `Payment` (`index: true`)
-- `amount`: Number (integer paise, validated against refundable balance)
-- `currency`: String (`'INR'`)
-- `status`: Enum (`PENDING`, `PROCESSED`, `FAILED`)
-- `razorpayRefundId`: String
-- `approvedBy`: `{ userId, name, role }`
-- `processedAt`: Date
-- `notes`: String
-- `isArchived`: Boolean (`index: true`)
-
-### 5. `AuditLog`
-- `entity`: Enum (`Order`, `Payment`, `Return`, `Refund`)
-- `entityId`: ObjectId / String (`index: true`)
-- `action`: String (e.g. `RETURN_APPROVED`, `REFUND_PROCESSED`)
-- `performedBy`: `{ userId, name, role }`
-- `previousState`, `newState`: Object snapshots
-- `metadata`: Object
-- `timestamp`: Date (`default: Date.now`, `index: true`)
+```
+ecommerce-crm/
+├── README.md                            # Complete root documentation
+├── .gitignore                           # Repository git ignore rules
+├── docs/
+│   ├── demo.gif                         # Animated terminal recording
+│   └── screenshots/
+│       ├── 01-install.png               # npm install screenshot
+│       ├── 02-run.png                   # Server run & health check screenshot
+│       └── 03-tests.png                 # Test suite run screenshot
+└── backend/
+    ├── package.json
+    ├── .env.example
+    ├── postman/
+    │   └── ecommerce-crm-complete.postman_collection.json
+    ├── src/
+    │   ├── app.js
+    │   ├── server.js
+    │   ├── config/ (db.js, env.js, swagger.js)
+    │   ├── integrations/
+    │   │   ├── payment/razorpay.adapter.js
+    │   │   ├── upload/cloudinary.adapter.js
+    │   │   └── stubs/ (customer, inventory, product, notification, eventBus)
+    │   ├── middleware/ (auth, error, permission, upload, validate)
+    │   ├── modules/ (orders, payments, returns, refunds, audit)
+    │   └── utils/ (AppError, apiResponse, money, orderNumber, stateMachines)
+    └── tests/ (setup.js, orders.test.js, payments.test.js, returns_refunds.test.js)
+```

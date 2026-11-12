@@ -1,48 +1,71 @@
-# E-Commerce CRM — Orders, Payments & Returns/Refunds Backend
+# 🛍️ E-Commerce CRM — Orders, Payments, Returns & Refunds
 
-[![Node.js](https://img.shields.io/badge/Node.js-v20%2B-green.svg)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express.js-4.21.2-blue.svg)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-brightgreen.svg)](https://mongoosejs.com/)
-[![Razorpay](https://img.shields.io/badge/Razorpay-Test%20Mode-blue.svg)](https://razorpay.com/)
-[![Tests](https://img.shields.io/badge/Tests-47%20Passed-success.svg)](https://jestjs.io/)
-[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](#)
+[![Node.js](https://img.shields.io/badge/Node.js-v20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express.js-4.21.2-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white)](https://mongoosejs.com/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-Test%20Mode-0C2340?logo=razorpay&logoColor=white)](https://razorpay.com/)
+[![Jest Tests](https://img.shields.io/badge/Tests-47%20Passed%20(100%25)-brightgreen.svg?logo=jest&logoColor=white)](https://jestjs.io/)
+[![Swagger Docs](https://img.shields.io/badge/API%20Docs-Swagger%203.0-85EA2D?logo=swagger&logoColor=black)](http://localhost:5000/api-docs)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](#)
 
-Production-ready, highly hardened Node.js and Express.js modular monolith backend managing the complete **Orders, Payments, and Returns/Refunds** lifecycle for an enterprise MERN E-Commerce CRM.
-
----
-
-## 🎬 Terminal Demo
-
-![Terminal Demo](docs/demo.gif)
+A production-ready, security-hardened **Node.js and Express.js** modular monolith backend governing the full **Order Fulfillment, Razorpay Payment Processing, and Returns & Refunds** lifecycle for an enterprise MERN E-Commerce CRM.
 
 ---
 
-## 📸 Proof of Functionality & Test Verification
+## 🎬 Terminal Recording (Live Demo)
 
-### 1. Dependency Installation
-![01-install](docs/screenshots/01-install.png)
+Demonstrating the environment verification, running the 47-test suite with in-memory MongoDB, and booting the HTTP server with health probe validation:
 
-### 2. Server Boot & Health Probe
-![02-run](docs/screenshots/02-run.png)
+<div align="center">
+  <img src="docs/demo.gif" alt="Animated Terminal Demo" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
 
-### 3. Comprehensive Test Suite (47/47 Tests Passing)
-![03-tests](docs/screenshots/03-tests.png)
+---
+
+## 📸 Proof of Functionality & Terminal Verification
+
+All key phases of the application have been executed and verified in the terminal:
+
+### 1. Dependency Installation & Clean Audit
+Output of running `npm install` across all production and test dependencies:
+
+<div align="center">
+  <img src="docs/screenshots/01-install.png" alt="01 - Dependency Installation" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+### 2. Server Startup & Live Health Probe
+Starting the Express server on port 5000, establishing the database connection, printing the endpoints banner, and serving a live HTTP `GET /health` probe:
+
+<div align="center">
+  <img src="docs/screenshots/02-run.png" alt="02 - Server Execution and Health Check" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
+
+---
+
+### 3. Comprehensive Test Suite (47 of 47 Tests Passing)
+Execution of the complete Jest + Supertest suite across **Orders**, **Payments (Razorpay)**, and **Returns/Refunds** with zero regressions:
+
+<div align="center">
+  <img src="docs/screenshots/03-tests.png" alt="03 - Full Jest Test Suite" width="90%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+</div>
 
 ---
 
 ## 🚀 Key Architectural Highlights
 
-1. **Strict Integer-Paise Arithmetic**: Floating-point mathematics is strictly prohibited for money. All amounts (subtotals, discounts, taxes, grand totals, payments, and refunds) are represented as non-negative **integer paise** (e.g. ₹799.00 = `79900` paise).
+1. **Strict Integer-Paise Arithmetic**: Floating-point representations are strictly prohibited for monetary values. All subtotals, item discounts, GST taxes, grand totals, payments, and refunds are calculated and stored in **integer paise** (e.g. ₹799.00 = `79900` paise).
 2. **Deterministic State Machines**:
    - **Order Lifecycle**: `PLACED` → `CONFIRMED` → `PROCESSING` → `PACKED` → `SHIPPED` → `OUT_FOR_DELIVERY` → `DELIVERED` (cancellation permitted strictly prior to `SHIPPED`).
    - **Return & Refund Lifecycle**: `REQUESTED` → `APPROVED` → `PICKUP_SCHEDULED` → `RECEIVED` → `INSPECTED` → `REFUNDED` (or `REJECTED`).
 3. **Hardening & Security**:
    - `helmet` security headers.
-   - Restrictive CORS policy.
-   - `express-mongo-sanitize` defending against NoSQL operator injection.
-   - `express-rate-limit` defending against brute-force / DDoS attacks.
+   - Environment-scoped CORS policy.
+   - `express-mongo-sanitize` defending against NoSQL injection.
+   - `express-rate-limit` protecting against brute-force / DDoS attacks.
    - Append-only event histories (`statusHistory`, `events`, `history`).
-   - Soft deletions (`isArchived: true`), never destructive hard deletes.
+   - Soft-deletions (`isArchived: true`), avoiding destructive deletions.
 4. **Razorpay Payment Gateway (Test Mode)**:
    - Gateway SDK calls isolated strictly behind `src/integrations/payment/razorpay.adapter.js`.
    - Raw-body HMAC-SHA256 signature verification for webhooks (`payment.captured`, `payment.failed`, `refund.processed`).
@@ -69,12 +92,12 @@ cd ecommerce-crm/backend
 npm install
 ```
 
-### 2. Environment Setup
+### 2. Environment Configuration
 Create a `.env` file from `.env.example`:
 ```bash
 cp .env.example .env
 ```
-Ensure required configuration values:
+Key configuration parameters:
 ```ini
 PORT=5000
 NODE_ENV=development
@@ -106,7 +129,7 @@ npm start
 # Run all unit and integration test suites
 npm test
 
-# Run tests with full coverage reporting
+# Run tests with code coverage reporting
 npm run test:coverage
 ```
 
